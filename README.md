@@ -1,0 +1,1 @@
+# a readme file for a django project that uses openai api to generate a whole book of a genre of your choice
