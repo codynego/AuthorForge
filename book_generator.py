@@ -15,7 +15,7 @@ tones_list = ['Humorous', 'Romantic', 'Mysterious', 'Lighthearted',
 
 
 chapters = []
-openai.api_key = "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"
+openai.api_key = os.getenv("OPENAI_API_KEY")
 chapters_response = openai.Completion.create(
         model="text-davinci-003",
         prompt="write me a song",
