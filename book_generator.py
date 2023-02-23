@@ -1,5 +1,5 @@
-import os
 import openai
+import os
 
 genres = ['Romance','Mystery','Science Fiction', 'Fantasy', 'Horror',
         'Comics and graphic novels','Travel and adventure', 'Science and nature',
@@ -13,16 +13,12 @@ tones_list = ['Humorous', 'Romantic', 'Mysterious', 'Lighthearted',
                 'Thrilling', 'Inspiring', 'Somber', 'Educational', 'Sophisticated', 
                 'Dramatic', 'Fantastical', 'Action-Packed']
 
-
-chapters = []
 openai.api_key = os.getenv("OPENAI_API_KEY")
 chapters_response = openai.Completion.create(
         model="text-davinci-003",
-        prompt="write me a song",
+        prompt="write me a song about programming",
         max_tokens= 3000,
         temperature=0.7
 )
-
-
 
 print(chapters_response["choices"][0]["text"].strip())
