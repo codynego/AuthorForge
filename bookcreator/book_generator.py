@@ -1,5 +1,6 @@
 import openai
 import os
+import json
 
 genres = ['Romance','Mystery','Science Fiction', 'Fantasy', 'Horror',
         'Comics and graphic novels','Travel and adventure', 'Science and nature',
@@ -22,6 +23,22 @@ class BookGenerator:
                 self.tone = tone
                 self.title = title
                 self.chapters = []
+
+        def get_genre(self):
+                """Returns the genre of the book"""
+                return self.genre
+        
+        def get_tone(self):
+                """Returns the tone of the book"""
+                return self.tone
+        
+        def get_title(self):
+                """Returns the title of the book"""
+                return self.title
+        
+        def get_chapters(self):
+                """Returns the chapters of the book"""
+                return self.chapters
 
         def makeApiCall(self, prompt):
                 """
@@ -75,3 +92,29 @@ class BookGenerator:
                         return book_response["choices"][0]["text"].strip()
                 else:
                         raise ValueError("Invalid genre, tone, or title")
+                
+        def generate_prompt(self, intent):
+                """ 
+                returns the prompt for the given intent based on the title, 
+                genre and tone of the book
+
+                args:
+                intent (str): The intent of the prompt (generate chapters or generate chapter content)
+        
+                """
+                intent_list = ["generate chapters", "generate content"]
+                if intent not in intent_list:
+                        raise ValueError("Intent not found")
+                if type(intent) != str:
+                        raise ValueError("Intent must be a string")
+                if self.validate():
+                        if intent == "generate chapters":
+                                try:
+                                        with open('genres.json', 'r') as f:
+                                                genres = json.load(f)
+                                except:
+                                        genres = {}
+                                return "Input: Genre\n" + self.genre + "\nInput: Tone\n" + self.tone + "\nInput: Title\n" + self.title + "\nInput: Chapter\n"
+                        elif intent == "generate content":
+                                return "Input: Genre\n" + self.genre + "\nInput: Tone\n" + self.tone + "\nInput: Title\n" + self.title + "\nInput: Content\n"             
+        
