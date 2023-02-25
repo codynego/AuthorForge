@@ -18,7 +18,7 @@ tones_list = ['Humorous', 'Romantic', 'Mysterious', 'Lighthearted',
 # This class is used to generate a book
 class BookGenerator:
 
-    def __init__(self, genre, tone, title, book_objective=None, target_audience=None):
+    def __init__(self, genre, tone, title, book_objective, target_audience):
         # Initializing the book generator
         self.genre = genre
         self.tone = tone
@@ -26,7 +26,10 @@ class BookGenerator:
         self.chapters = []
         self.book_objective = book_objective
         self.target_audience = target_audience
-        
+
+    def __str__():
+        """ A string representation of the object """
+        return "{} - {}"
 
     def get_genre(self):
         """Returns the genre of the book"""
@@ -53,14 +56,10 @@ class BookGenerator:
         """
         openai.api_key = os.getenv("OPENAI_API_KEY")
         response = openai.Completion.create(
-            engine="davinci",
+            engine="text-davinci-003",
             prompt=prompt,
-            temperature=0.9,
-            max_tokens=100,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=["\n", "Input:"]
+            temperature=0.7,
+            max_tokens=1000,
         )
         response = response["choices"][0]["text"].strip()
         return response
@@ -68,11 +67,14 @@ class BookGenerator:
     def validate(self):
         """Validates the genre, tone, and title of the book"""
 
-        if self.genre not in genres:
+        tones = [x.lower() for x in tones_list]
+        genres_list = [x.lower() for x in genres]
+
+        if self.genre.lower() not in genres_list:
             raise ValueError("Genre not found")
         if type(self.genre) != str:
             raise ValueError("Genre must be a string")
-        if self.tone not in tones_list:
+        if self.tone.lower() not in tones:
             raise ValueError("Tone not found")
         if type(self.tone) != str:
             raise ValueError("Tone must be a string")
@@ -83,20 +85,17 @@ class BookGenerator:
     def generate_chapters(self):
         """Generates the chapters of the book"""
         if self.validate():
-            chapters_response = self.makeApiCall(
-                "Input: Genre\n" + self.genre + "\nInput: Tone\n" + self.tone + "\nInput: Title\n" + self.title + "\nInput: Chapter\n")
-            self.chapters.append(
-                chapters_response["choices"][0]["text"].strip())
-            return self.chapters
+            chapter_prompt = self.generate_prompt("generate chapters")
+            chapters_response = self.makeApiCall(chapter_prompt)
+            return chapters_response
         else:
             raise ValueError("Invalid genre, tone, or title")
 
     def generate_book(self):
         """Generates the book"""
         if self.validate():
-            book_response = self.makeApiCall(
-                "Input: Genre\n" + self.genre + "\nInput: Tone\n" + self.tone + "\nInput: Title\n" + self.title + "\nInput: Book\n")
-            return book_response["choices"][0]["text"].strip()
+            prompt = self.load_json("generate chapters")
+            book_response = self.makeApiCall()
         else:
             raise ValueError("Invalid genre, tone, or title")
 
@@ -115,18 +114,16 @@ class BookGenerator:
         if type(intent) != str:
             raise ValueError("Intent must be a string")
         if self.validate():
-            if intent == "generate chapters":
-                try:
-                    with open('genres.json', 'r') as f:
-                        genres = json.load(f)
-                except:
-                    genres = {}
-                return "Input: Genre\n" + self.genre + "\nInput: Tone\n" + self.tone + "\nInput: Title\n" + self.title + "\nInput: Chapter\n"
-            elif intent == "generate content":
-                return "Input: Genre\n" + self.genre + "\nInput: Tone\n" + self.tone + "\nInput: Title\n" + self.title + "\nInput: Content\n"
+            try:
+                prompt = self.load_json(intent)
+                prompt = prompt[self.genre]
+                return prompt
+            except Exception as e:
+                print(f"Error loading json file: {str(e)}")
+                return "invalid syntax"
         else:
             raise ValueError("Invalid genre, tone, or title")
-
+        
     def load_json(self, prompt_type):
         """Loads the json file and returns the prompt"""
 
@@ -136,34 +133,56 @@ class BookGenerator:
             raise ValueError("Invalid prompt type")
         if type(prompt_type) != str:
             raise ValueError("Prompt type must be a string")
-        
+
         # Check if the genre, tone, and title are valid
         if self.validate():
-            # Check if the prompt type is generate chapters
-            if prompt_type == "generate content":
-                try:
-                    with open('bookcreator/genres.json', 'r') as f:
-                        data = json.load(f)
-                        data_prompt = data[self.genre]
-                        data_prompt = data_prompt.replace("[insert chapter title]", self.genre)
-                        data_prompt = data_prompt.replace("[writing tone]", self.tone)
-                        data_prompt = data_prompt.replace("[insert book title]", self.title)
-
-                        return data_prompt
-                except:
-                    return "Invalid statement"
-            elif prompt_type == "generate chapters":
+            if prompt_type == "generate chapters":
                 try:
                     with open('bookcreator/outlineprompt.json', 'r') as f:
-                        data = json.load(f)
-                        data_prompt = data[self.genre]
-                        data_prompt = data_prompt.replace("[book title]", self.title)
-                        data_prompt = data_prompt.replace("[writing tone]", self.tone)
-                        data_prompt = data_prompt.replace("[book objective]", self.book_objective)
-                        data_prompt = data_prompt.replace("[target audience]", self.target_audience)
-                        return data_prompt
-                except:
-                    return "Invalid statement"
+                        chapter_prompt = json.load(f)
+                    for k, v in chapter_prompt.items():
+                        v = v.replace("[book title]", self.title)
+                        v = v.replace("[writing tone]", self.tone)
+                        v = v.replace("[book objective]", self.book_objective)
+                        v = v.replace("[target audience]", self.target_audience)
+                        chapter_prompt[k] = v
+                    return chapter_prompt
+                except Exception as e:
+                    print(f"Error loading json file: {str(e)}")
+                    return "invalid"
+            elif prompt_type == "generate content":
+                try:
+                    with open('bookcreator/genres.json', 'r') as f:
+                        content_prompt = json.load(f)
+                    for k, v in content_prompt.items():
+                        v = v.replace("[insert sub-chapter title]", self.subchapter)
+                        v = v.replace("[insert chapter title]", self.chaptertitle)
+                        v = v.replace("[insert book title]", self.title)
+                        v = v.replace("[writing tone]", self.tone)
+                        content_prompt[k] = v
+                    return content_prompt
+                except Exception as e:
+                    print(f"Error loading json file: {str(e)}")
+                    return "invalid"
+            else:
+                raise ValueError("Invalid prompt type")
+        else:
+            raise ValueError("Invalid genre, tone, or title")
+        
+    def split_chapters(self, chapters):
+        """Splits the chapters into a subchapter list"""
+        parts = {}
+        current_part = ""
+        for line in chapters.split('\n'):
+            if line.startswith("Part "):
+                current_part = line.strip()
+                parts[current_part] = []
+            elif line.startswith("Chapter "):
+                parts[current_part].append(line.strip())
 
-b1 = BookGenerator("Fantasy", "Informative", "The Book of the Dead", "To entertain", "Children")
-print(b1.load_json("generate chapters"))
+        print(parts)
+
+
+b1 = BookGenerator("Self-help", "inspiring", "The Book of Life", "to inspire people", "everyone")
+#print(b1.generate_chapters())
+print(b1.split_chapters(b1.generate_chapters()))
