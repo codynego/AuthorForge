@@ -180,7 +180,7 @@ class BookGenerator:
             elif line.startswith("Chapter "):
                 parts[current_part].append(line.strip())
 
-        print(parts)
+        return (parts)
 
 
 b1 = BookGenerator("Self-help", "inspiring", "The Book of Life", "to inspire people", "everyone")
