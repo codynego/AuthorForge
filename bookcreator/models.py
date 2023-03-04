@@ -1,8 +1,24 @@
 from django.db import models
 
 # Create your models here.
+
+class Genre(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class Tone(models.Model):
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+
 class Book(models.Model):
     title = models.CharField(max_length=100)
+    genre = models.ForeignKey(Genre, on_delete=models.PROTECT)
+    tone = models.ForeignKey(Tone, on_delete=models.PROTECT)
     content = models.CharField(max_length=100)
 
     def __str__(self):
@@ -23,31 +39,3 @@ class SubChapter(models.Model):
 
     def __str__(self):
         return self.title
-
-class Genre(models.Model):
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
-
-class Tone(models.Model):
-    name = models.CharField(max_length=50)
-
-    def __str__(self):
-        return self.name
-
-class GenrePrompt(models.Model):
-    name = models.CharField(max_length=100)
-    prompt = models.TextField()
-
-    def __str__(self):
-        return self.name
-
-class GenreContentPrompt(models.Model):
-    name = models.CharField(max_length=100)
-    prompt = models.TextField()
-
-    def __str__(self):
-        return self.name
-    
-
